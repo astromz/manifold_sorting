@@ -12,6 +12,9 @@ To sort a data matrix `data_to_sort`  based on 1D manifold learning using select
             # If Spectral embedding on rows and Isomap on columns give the best result:
             sorted_data = embedding_sort(sorted_data, 'SpectralEmbedding', 'Isomap')
 
+            # If only want to sort rows:
+            sorted_data = embedding_sort(sorted_data, 'SpectralEmbedding', None)
+
 
 To learn 1-D embedding of all rows in a matrix and explore the results on your own:
             all_trans_data_rows, methods = learn_embedding_all(data_to_embed, dimension=1)
@@ -24,7 +27,6 @@ from __future__ import absolute_import, division, print_function
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-import seaborn as sns
 from sklearn import manifold
 import matplotlib.cm as cm
 from matplotlib.ticker import NullFormatter
@@ -146,7 +148,7 @@ def learn_embedding_all(data_to_embed, dimension=1, n_neighbors=10):
 
 
 
-def embedding_sort(data_to_embed, method_for_row, method_for_col, n_neighbors = 10):
+def embedding_sort(data_to_embed, method_for_row, method_for_col, n_neighbors = 10, make_plot=True):
     '''Sort 2-D data by learning 1d embedding using all methods in sklearn. Rows are sorted first, then columns.
     This function can be called after first using `learn_embedding_all()` to explore the best methods.
 
@@ -155,15 +157,17 @@ def embedding_sort(data_to_embed, method_for_row, method_for_col, n_neighbors = 
     data_to_embed : nd.array or pd.DataFrame
                     A matrix to be used for manifold learning. Each row is a vector in the n_column high dimension space,
                     i.e., rows are instances and columns are features or dimensions.
-    method_for_row : str
+    method_for_row : str or None
                     Any of the following methods: 'standard',  'modified', 'hessian', 'ltsa', 'Isomap', 'MDS', 'SpectralEmbedding', 'TSNE'
                     Check http://scikit-learn.org/stable/modules/manifold.html for details of all methods.
                     A `methods` list can also be returned by calling `learn_embedding_all` first.
+                    If == None, then no sorting will be apllied to rows.
 
 
-    method_for_col : str
+    method_for_col : str or None
                     Similar to above but for columns, if use different methods for rows and columns.
                     This is not necessary but can help for some data.
+                    If == None, then no sorting will be apllied to columns.
 
     Return
     --------
@@ -181,37 +185,46 @@ def embedding_sort(data_to_embed, method_for_row, method_for_col, n_neighbors = 
     shape = data_to_embed.shape
 
     # Step 1: learn embedding of rows and sort rows
-    trans_data_row = learn_embedding(data_to_embed, method_for_row, n_neighbors= n_neighbors)
-    ind_row = np.argsort(trans_data_row[0])[::-1]
-    if isinstance(data_to_embed, np.ndarray):
-        data_to_embed_row_sorted = data_to_embed[ind_row, :]
-    elif isinstance(data_to_embed, pd.DataFrame):
-        data_to_embed_row_sorted = data_to_embed.iloc[ind_row, :]
+    if method_for_row == None:
+        data_to_embed_row_sorted = data_to_embed
+    else:
+        trans_data_row = learn_embedding(data_to_embed, method_for_row, n_neighbors= n_neighbors)
+        ind_row = np.argsort(trans_data_row[0])[::-1]
+        if isinstance(data_to_embed, np.ndarray):
+            data_to_embed_row_sorted = data_to_embed[ind_row, :]
+        elif isinstance(data_to_embed, pd.DataFrame):
+            data_to_embed_row_sorted = data_to_embed.iloc[ind_row, :]
 
     # Step 2: learn embedding of columns and sort columns
-    trans_data_col = learn_embedding(data_to_embed_row_sorted.T, method_for_col, n_neighbors=n_neighbors)
-    ind_col = np.argsort(trans_data_col[0])[::-1]
-    if isinstance(data_to_embed_row_sorted, np.ndarray):
-        data_to_embed_all_sorted = data_to_embed_row_sorted[:, ind_col]
-    elif isinstance(data_to_embed_row_sorted, pd.DataFrame):
-        data_to_embed_all_sorted = data_to_embed_row_sorted.iloc[:, ind_col]
+    if method_for_col==None:
+        data_to_embed_all_sorted = data_to_embed_row_sorted
+    else:
+        trans_data_col = learn_embedding(data_to_embed_row_sorted.T, method_for_col, n_neighbors=n_neighbors)
+        ind_col = np.argsort(trans_data_col[0])[::-1]
+        if isinstance(data_to_embed_row_sorted, np.ndarray):
+            data_to_embed_all_sorted = data_to_embed_row_sorted[:, ind_col]
+        elif isinstance(data_to_embed_row_sorted, pd.DataFrame):
+            data_to_embed_all_sorted = data_to_embed_row_sorted.iloc[:, ind_col]
 
-    # Plotting
-    fig, axes = plt.subplots(2,2, figsize=(12, 10))
-    plt.suptitle("{0}+{1} Manifold Learning with {2} points, {3} neighbors".format(method_for_row,
-                                                                                   method_for_col,
-                                                                                   shape[0], n_neighbors), fontsize=14)
-    row_colors = cm.rainbow(np.linspace(0,1, shape[0]))
-    col_colors = cm.rainbow(np.linspace(0,1, shape[1]))
+    if make_plot==True:
+        # Plotting
+        fig, axes = plt.subplots(2,2, figsize=(12, 10))
+        plt.suptitle("{0}+{1} Manifold Learning with {2} points, {3} neighbors".format(method_for_row,
+                                                                                       method_for_col,
+                                                                                       shape[0], n_neighbors), fontsize=14)
+        row_colors = cm.rainbow(np.linspace(0,1, shape[0]))
+        col_colors = cm.rainbow(np.linspace(0,1, shape[1]))
 
-    axes[0,0].scatter(range(len(trans_data_row[0])), trans_data_row[0], c=row_colors, cmap=plt.cm.rainbow)
-    axes[0,0].set_title('1d Embedding for rows')
-    axes[0,1].scatter(range(len(trans_data_col[0])), trans_data_col[0], c=col_colors, cmap=plt.cm.rainbow)
-    axes[0,1].set_title('1d Embedding for columns')
-    sns.heatmap(data_to_embed_row_sorted, ax=axes[1,0])
-    axes[1,0].set_title('Sorted heatmap for sorted rows')
-    sns.heatmap(data_to_embed_all_sorted, ax=axes[1,1])
-    axes[1,1].set_title('Sorted heatmap for both rows and columns sorted')
-    plt.show()
+        axes[0,0].scatter(range(len(trans_data_row[0])), trans_data_row[0], c=row_colors, cmap=plt.cm.rainbow)
+        axes[0,0].set_title('1d Embedding for rows')
+        axes[0,1].scatter(range(len(trans_data_col[0])), trans_data_col[0], c=col_colors, cmap=plt.cm.rainbow)
+        axes[0,1].set_title('1d Embedding for columns')
+        axes[1,0].imshow(data_to_embed_row_sorted, cmap='jet')
+        axes[1,0].grid(False)
+        axes[1,0].set_title('Sorted heatmap for sorted rows')
+        axes[1,1].imshow(data_to_embed_all_sorted, cmap='jet')
+        axes[1,1].grid(False)
+        axes[1,1].set_title('Sorted heatmap for both rows and columns sorted')
+        plt.show()
 
     return data_to_embed_all_sorted

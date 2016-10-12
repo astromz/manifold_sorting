@@ -10,16 +10,20 @@ To sort a data matrix `data_to_sort`  based on 1D manifold learning using select
     # data_to_sort is a 2D matrix, each row is a vector of ncolumn dimension space: [x1, x2, ..., xn]
     # Manifold learning methods. First 4 are Locally Linear Embedding.
 
-    import manifold_sorting as ms
+    from manifold_sorting import manifold_sorting as ms
     methods = ['standard', 'modified', 'hessian', 'ltsa', 'Isomap', 'MDS', 'SpectralEmbedding', 'TSNE']
     for method in methods:
-        sorted_data = ms.embedding_sort(data_to_sort, method, method)
+        sorted_data = ms.embedding_sort(data_to_sort, method, method, make_plot=True)
 
     # If Spectral Embedding gives the best result for both rows and columns.
     sorted_data = ms.embedding_sort(data_to_sort, 'SpectralEmbedding', 'SpectralEmbedding')
 
     # If Spectral embedding on rows and Isomap on columns give the best result:
     sorted_data = ms.embedding_sort(sorted_data, 'SpectralEmbedding', 'Isomap')
+
+    # If only want to sort rows:
+    sorted_data = embedding_sort(sorted_data, 'SpectralEmbedding', None)
+
 
 
 To learn 1-D embedding of all rows in a matrix and explore the results later on your own:
