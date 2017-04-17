@@ -1,5 +1,5 @@
 # Manifold Sorting
-Sort an array using manifold learning
+Sort a 2D array using manifold learning
 
 This is a module that uses sklearn's manifold learning to automatically explore all methods,
 find the best one, and more importantly **SORT** the data array for better visualization if needed.
