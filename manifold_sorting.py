@@ -106,6 +106,9 @@ def learn_embedding_all(data_to_embed, dimension=1, n_neighbors=10):
             all_trans_data_rows, methods = learn_embedding_all(data_to_embed, dimension=1)
 
     '''
+    if dimension >3:
+        print('dimension must be <=3 for visualization!! Quit.')                
+        return None                    
     n_samples = data_to_embed.shape[0]
     all_trans_data = []
 
